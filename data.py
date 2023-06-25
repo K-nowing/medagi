@@ -96,7 +96,8 @@ class DataModule(pl.LightningDataModule):
             use_cls_name_init='none',
             use_cls_sim_prior='none',
             remove_cls_name=False,
-            submodular_weights=None):
+            submodular_weights=None,
+            std_score_path=None):
         super().__init__()
         
         # image feature is costly to compute, so it will always be cached
@@ -169,13 +170,15 @@ class DataModule(pl.LightningDataModule):
         self.concepts_raw, idx = self.preprocess(self.concepts_raw, self.cls_names)
         self.concept2cls = self.concept2cls[idx] 
         self.concept_select_fn = concept_select_fn
+        self.std_score = th.zeros(len(idx)) if std_score_path is None else th.load(std_score_path)
+        assert self.std_score.size(0) == len(idx)
 
         if self.n_shots != "all":
             assert len(self.img_feat['train']) == len(self.cls_names) * self.n_shots
 
         self.prepare_txt_feat(self.concepts_raw, self.clip_model, self.clip_ckpt)
 
-        self.select_concept(self.concept_select_fn, self.img_feat['train'], self.concept_feat, self.n_shots, self.num_concept, self.concept2cls, self.clip_ckpt, self.num_images_per_class, self.submodular_weights)
+        self.select_concept(self.concept_select_fn, self.img_feat['train'], self.concept_feat, self.std_score, self.n_shots, self.num_concept, self.concept2cls, self.clip_ckpt, self.num_images_per_class, self.submodular_weights)
 
         # save all raw concepts and coresponding classes as a reference
         np.save(self.concepts_raw_save_dir, self.concepts_raw)
@@ -260,10 +263,10 @@ class DataModule(pl.LightningDataModule):
         self.class_sim = final_sim
     
 
-    def select_concept(self, concept_select_fn, img_feat_train, concept_feat, n_shots, num_concepts, concept2cls, clip_ckpt, num_images_per_class, submodular_weights):
+    def select_concept(self, concept_select_fn, img_feat_train, concept_feat, std_score, n_shots, num_concepts, concept2cls, clip_ckpt, num_images_per_class, submodular_weights):
         if not self.select_idx_save_dir.exists() or (self.force_compute and not clip_ckpt):
             print('select concept')
-            self.select_idx = concept_select_fn(img_feat_train, concept_feat, n_shots, concept2cls, 
+            self.select_idx = concept_select_fn(img_feat_train, concept_feat, std_score, n_shots, concept2cls, 
                                                 num_concepts, num_images_per_class, submodular_weights)
             th.save(self.select_idx, self.select_idx_save_dir)
         else:

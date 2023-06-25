@@ -124,7 +124,7 @@ def plot(features, selected_idx, filename):
     plt.savefig('{}.png'.format(filename))
 
 
-def submodular_select(img_feat, concept_feat, n_shots, concept2cls, num_concepts, num_images_per_class, submodular_weights, *args):
+def submodular_select(img_feat, concept_feat, std_score, n_shots, concept2cls, num_concepts, num_images_per_class, submodular_weights, *args):
     from apricot import CustomSelection, MixtureSelection, FacilityLocationSelection
     assert num_concepts > 0
     num_cls = len(num_images_per_class)
@@ -140,7 +140,8 @@ def submodular_select(img_feat, concept_feat, n_shots, concept2cls, num_concepts
     distance_selector = FacilityLocationSelection(num_concepts_per_cls, metric='cosine')
 
     mi_score_scale = submodular_weights[0]
-    facility_weight = submodular_weights[-1]
+    facility_weight = submodular_weights[1]
+    std_weight = submodular_weights[2]
     
     if mi_score_scale == 0:
         submodular_weights = [0, facility_weight]
@@ -154,8 +155,7 @@ def submodular_select(img_feat, concept_feat, n_shots, concept2cls, num_concepts
         if len(cls_idx) <= num_concepts_per_cls:
             selected_idx.extend(cls_idx)
         else:
-            mi_scores = all_mi_scores[cls_idx] * mi_score_scale
-
+            mi_scores = all_mi_scores[cls_idx] * mi_score_scale + std_score[cls_idx] * std_weight
             current_concept_features = concept_feat[cls_idx]
             augmented_concept_features = th.hstack([th.unsqueeze(mi_scores, 1), current_concept_features]).numpy()
             selector = MixtureSelection(num_concepts_per_cls, functions=[mi_selector, distance_selector], weights=submodular_weights, optimizer='naive', verbose=False)
@@ -166,7 +166,7 @@ def submodular_select(img_feat, concept_feat, n_shots, concept2cls, num_concepts
     return th.tensor(selected_idx)
 
 
-def random_select(img_feat, concept_feat, n_shots, concept2cls, num_concepts, num_images_per_class, submodular_weights, *args):
+def random_select(img_feat, concept_feat, std_score, n_shots, concept2cls, num_concepts, num_images_per_class, submodular_weights, *args):
     assert num_concepts > 0
     num_cls = len(num_images_per_class)
     take_all = False

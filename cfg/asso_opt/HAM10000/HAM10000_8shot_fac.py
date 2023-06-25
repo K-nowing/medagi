@@ -8,4 +8,4 @@ bs = 8
 
 concept_type = "all_submodular"
 concept_select_fn = "submodular"
-submodular_weights = [1e7, 10]
+submodular_weights = [1e7, 10, 10000]

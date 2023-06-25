@@ -4,8 +4,8 @@ data_root = 'exp/asso_opt/HAM10000/HAM10000_16shot_fac'
 init_val = 0.1
 
 lr = 1e-3
-bs = 16
+bs = 8
 
 concept_type = "all_submodular"
 concept_select_fn = "submodular"
-submodular_weights = [1e7, 15]
+submodular_weights = [1e7, 15, 1000]

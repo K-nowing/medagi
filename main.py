@@ -11,6 +11,15 @@ import random
 proj_name = 'Food-Fixed-Seed'
 check_interval = 10
 
+def seed_setting(seed):
+    th.manual_seed(seed)
+    th.cuda.manual_seed(seed)
+    th.cuda.manual_seed_all(seed) # if use multi-GPU
+    th.backends.cudnn.deterministic = True
+    th.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)
+    
 def linear_probe_sklearn_main(cfg):
     "Adapted from: https://github.com/KaiyangZhou/CoOp/blob/main/lpclip/linear_probe.py"
     from sklearn.linear_model import LogisticRegression
@@ -21,8 +30,7 @@ def linear_probe_sklearn_main(cfg):
     best_c_weights_list = []
 
     for seed in range(1, cfg.n_runs + 1):
-        np.random.seed(seed)
-        random.seed(seed)
+        seed_setting(seed)
         data_module = LinearProbeDataModule(cfg.data_root,
                                             cfg.bs,
                                             cfg.img_split_path,
@@ -192,9 +200,10 @@ def asso_opt_main(cfg):
             else:
                 concept_select_fn = clip_score_select
                 print("use clip")
-    
-    random.seed(1) # seed matches first run of linear probe
 
+    random_seed = 1 
+    seed_setting(random_seed)
+    
     try: print(cfg.submodular_weights)
     except: cfg.submodular_weights = "none"
     if cfg.proj_name == "ImageNet" and (cfg.n_shots == "all" or cfg.n_shots == 16):
@@ -246,7 +255,8 @@ def asso_opt_main(cfg):
             use_cls_name_init=cfg.cls_name_init if 'cls_name_init' in cfg else 'none',
             use_cls_sim_prior=cfg.cls_sim_prior if 'cls_sim_prior' in cfg else 'none',
             remove_cls_name=cfg.remove_cls_name if 'remove_cls_name' in cfg else True,
-            submodular_weights=cfg.submodular_weights
+            submodular_weights=cfg.submodular_weights,
+            std_score_path=cfg.std_score_path,
             )
 
     if cfg.test:

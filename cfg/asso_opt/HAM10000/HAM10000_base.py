@@ -34,3 +34,5 @@ lambda_div = 0.005
 
 # CLIP Backbone
 clip_model = 'ViT-L/14'
+
+std_score_path = "./scores_std.pth"

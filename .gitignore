@@ -5,4 +5,7 @@
 __pycache__
 wandb/
 lightning_logs/
+.ipynb_checkpoints/
+.vscode/
+*.ipynb
 .DS_Store
